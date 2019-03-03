@@ -6,7 +6,6 @@ class PacketQuickPlay extends Packet{
         super();
 
         this.packetID = packetID;
-        this.username;
         this.player;
     }
 }

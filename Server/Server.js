@@ -5,7 +5,7 @@ const maxPlayer = 64;
 
 const Player = require('./src/Player.js');
 const PacketQuickPlay = require('./src/Packets/PacketQuickPlay.js');
-const PacketRegister = require('./src/Packets/PacketRegister.js');
+const PacketSessionId = require('./src/Packets/PacketSessionId.js');
 
 
 
@@ -28,25 +28,37 @@ io.on('connection', (client) => {
     }
     // #endregion
 
+    // #region Tell client his session id
+    let packetSessionId = new PacketSessionId().sessionId = client.id;
+    client.send(JSON.stringify(packetSessionId));
+    // #endregion
     var loggedIn = false;
     var player;
 
-    // 
+    // QuickPlay
     client.on(PacketQuickPlay.getPacketID(), (data) => {
         data = JSON.parse(data);
 
+        // #region User input checking
+        if(data.username.length <= 0) return;
+
+        // Remove illegal characters
+        data.username = data.username.replace(/([^a-z0-9]+)/gi, '-'); 
+        // #endregion
+
+        // #region Create our player object
         player = new Player(
             client.id,
             data.username,
         );
+        // #endregion
 
         // #region Send packet
-        var packet = new PacketQuickPlay();
-        packet.username = data.username;
-        packet.player = player;
-
+        let packetQuickPlay = new PacketQuickPlay().player = player;
+        let packet = JSON.stringify(packetQuickPlay);
         
-        client.emit(PacketQuickPlay.getPacketID(), JSON.stringify(packet));
+
+        client.emit(PacketQuickPlay.getPacketID(), packet);
         // #endregion
 
         console.log(`${player.username} connected. ID: ${player.id}.`);

@@ -2,6 +2,7 @@ const NetOP = {
     None: 'none',
     Register: 'register',
     QuickPlay: 'quick_play',
+    SessionId:  'session_id',
 }
 
 class Packet {
