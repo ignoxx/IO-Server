@@ -32,6 +32,7 @@ io.on('connection', (client) => {
     let packetSessionId = new PacketSessionId().sessionId = client.id;
     client.send(JSON.stringify(packetSessionId));
     // #endregion
+    
     var loggedIn = false;
     var player;
 
