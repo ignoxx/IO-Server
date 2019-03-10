@@ -1,11 +1,14 @@
 const server = require('http').createServer();
 const io = require('socket.io')(server);
+
 const Player = require('./src/Player.js');
+const World = require('./src/World.js');
+
 const PacketQuickPlay = require('./src/Packets/PacketQuickPlay.js');
 const PacketSessionId = require('./src/Packets/PacketSessionId.js');
 
+
 const port = 5000;
-const maxPlayer = 64;
 
 // Listen for incoming connections
 server.listen(port, (err) => {
@@ -17,27 +20,19 @@ server.listen(port, (err) => {
 io.on('connection', (client) => {
     console.log('Incoming connection..');
 
-    // #region Check if server is full
-    if (Player.getPlayerList().length + 1 > maxPlayer) {
-        client.disconnect();
-        console.log('Incoming connection closed. Server full');
-
-        // TODO: Tell Client that server is full
-    }
-    // #endregion
-
     // #region Tell client his session id
     let packetSessionId = new PacketSessionId();
     packetSessionId.sessionId = client.id;
     client.emit(packetSessionId.getPacketId(), JSON.stringify(packetSessionId));
     // #endregion
 
-    var loggedIn = false;
     var player;
 
     // QuickPlay
     client.on(PacketQuickPlay.getPacketId(), (data) => {
         data = JSON.parse(data);
+
+        // TODO check if user is logged in already
 
         // #region User input checking
         if (data.username.length <= 0) return;
@@ -55,7 +50,9 @@ io.on('connection', (client) => {
         let packetQuickPlay = new PacketQuickPlay();
         packetQuickPlay.player = player;
         
-        client.emit(PacketQuickPlay.getPacketID(), JSON.stringify(packetQuickPlay));
+        client.emit(packetQuickPlay.getPacketId(), JSON.stringify(packetQuickPlay));
+
+        console.log(JSON.stringify(packetQuickPlay));
         // #endregion
 
         console.log(`${player.username} connected. ID: ${player.id}.`);
@@ -63,7 +60,7 @@ io.on('connection', (client) => {
     });
 
     client.on('disconnect', (data) => {
-        if (loggedIn)
+        if (player.loggedIn)
             console.log(`Player '${player.username}' disconnected`);
         else
             console.log(`Client '${client.id}' disconnected`);
