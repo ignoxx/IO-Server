@@ -1,17 +1,8 @@
-const players = [];
-
 class Player {
-    static getPlayerList(){
-      return players;
-    }
-
-    static registerPlayer(playerObject){
-      players.push(playerObject);
-    }
-
-    constructor(id, username){
+    constructor(id, address, username){
       this.id = id;
       this.username = username;
+      this.address = address;
 
       this.loggedIn = false;
     }
