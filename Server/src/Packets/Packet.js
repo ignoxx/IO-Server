@@ -3,20 +3,13 @@ const NetOP = {
     Register: 'register',
     QuickPlay: 'quick_play',
     SessionId:  'session_id',
+    Disconnect: 'logout'
 };
 
 
 class Packet {
     static getNetOP(){
         return NetOP;
-    }
-
-    constructor() {
-        this.packetID = NetOP.None;
-    };
-
-    getPacketId() {
-        return this.packetID;
     }
 }
 

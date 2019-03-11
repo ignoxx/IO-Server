@@ -7,7 +7,7 @@ class World {
 
         console.log(`World created.. > MaxPlayers: ${this.maxPlayers}`);
 
-        this.i = 0;
+        // 60 FPS loop
         this.gameLoopId = GameLoop.setGameLoop(this.gameLoop.bind(this), 1000 / 60);
     }
 
@@ -18,14 +18,25 @@ class World {
         }
 
         // Check if player is already logged in by name and ip addr, if yes return false
-        // ..
+        for(let i in this.players) {
+            if(this.players[i].addr === Player.addr){
+                return false;
+            }
+        }
 
-        this.players.push(Player);
+        this.players[Player.id] = Player;
+        Player.loggedIn = true;
+        
         return true;
     }
 
+    removePlayer(Player) {
+        Player.loggedIn = false;
+        delete this.players[Player.id];
+    }
+
     gameLoop(delta) {
-        
+
     }
 }
 

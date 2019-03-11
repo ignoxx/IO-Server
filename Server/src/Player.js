@@ -1,8 +1,8 @@
 class Player {
-    constructor(id, address, username){
-      this.id = id;
-      this.username = username;
-      this.address = address;
+    constructor(data){
+      this.id = data.id;
+      this.username = data.username;
+      this.addr = data.addr;
 
       this.loggedIn = false;
     }

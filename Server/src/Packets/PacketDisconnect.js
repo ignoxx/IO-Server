@@ -1,16 +1,14 @@
 const Packet = require('./Packet.js')
 
-class PacketSessionId extends Packet{
+class PacketDisconnect extends Packet{
     static getPacketId() {
-        return Packet.getNetOP().SessionId;
+        return Packet.getNetOP().Disconnect;
     }
     
     constructor(){
         super();
-
         this.sessionId;
-        this.uniqueId;
     }
 }
 
-module.exports = PacketSessionId;
+module.exports = PacketDisconnect;

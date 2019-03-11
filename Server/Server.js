@@ -6,8 +6,10 @@ const World = require('./src/World.js');
 
 const PacketQuickPlay = require('./src/Packets/PacketQuickPlay.js');
 const PacketSessionId = require('./src/Packets/PacketSessionId.js');
+const PacketDisconnect = require('./src/Packets/PacketDisconnect.js');
 
 const port = 5000;
+const playerTimeOut = 30; //seconds
 
 var gameWorld;
 
@@ -29,7 +31,9 @@ io.on('connection', (client) => {
     // #region Tell client his session id
         let packetSessionId = new PacketSessionId();
         packetSessionId.sessionId = client.id;
+        packetSessionId.uniqueId = Math.random().toString(36).substring(3,16) + +new Date;
         client.emit(packetSessionId.getPacketId(), JSON.stringify(packetSessionId));
+        console.log(packetSessionId);
     // #endregion
 
     // QuickPlay
@@ -43,25 +47,29 @@ io.on('connection', (client) => {
             data.username = data.username.replace(/([^a-z0-9]+)/gi, '-');
         // #endregion
 
-        player = new Player(
-            client.id,
-            client.handshake.address,
+        // Check if player already exists
+
+        player = new Player({
+            id: client.id,
+            addr: client.handshake.address,
+            socket: client,
             
-            data.username,
-        );
+            username: data.username,
+        });
 
         if (gameWorld.addPlayer(player)) {
             // #region Send packet
                 let packetQuickPlay = new PacketQuickPlay();
                 packetQuickPlay.player = player;
-                
-                client.emit(packetQuickPlay.getPacketId(), JSON.stringify(packetQuickPlay));
+
+                //Send to all, including ourself
+                io.emit(packetQuickPlay.getPacketId(), JSON.stringify(packetQuickPlay));
             // #endregion
 
             console.log(`${player.username} connected.. > ${player.id}`);
         }
         else {
-            console.log(`${player.username} tried to connect.. > server is full`);
+            console.log(`${player.username} tried to connect.. > connection was rejected`);
         }
 
         
@@ -69,9 +77,19 @@ io.on('connection', (client) => {
     });
 
     client.on('disconnect', (data) => {
-        if (player.loggedIn)
-            console.log(`Player '${player.username}' disconnected`);
-        else
-            console.log(`Client '${client.id}' disconnected`);
+        console.log(`Client '${client.id}' disconnected`);
+
+        setTimeout(() => {
+            if (player.loggedIn) {
+                gameWorld.removePlayer(player);
+                // #region Send packet 
+                    packetDisconnect = new PacketDisconnect();
+                    packetDisconnect.sessionId = client.id;
+                    client.broadcast.emit(packetDisconnect.getPacketId(), JSON.stringify(packetDisconnect));
+                // #endregion
+
+                console.log(`Player '${player.username}' timed out`);
+            }
+        }, playerTimeOut * 1000);
     });
 });
