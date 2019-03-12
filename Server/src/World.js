@@ -18,21 +18,35 @@ class World {
         }
 
         // Check if player is already logged in by name and ip addr, if yes return false
-        for(let i in this.players) {
-            if(this.players[i].addr === Player.addr){
+        /*
+        for (let i in this.players) {
+            if (this.players[i].addr === Player.addr) {
                 return false;
             }
         }
+        */
 
-        this.players[Player.id] = Player;
+        this.players[Player.uid] = Player;
         Player.loggedIn = true;
-        
+
         return true;
+    }
+
+    findPlayerByUid(uniqueId) {
+        return (uniqueId in this.players);
+    }
+
+    getPlayer(uniqueId) {
+        return this.players[uniqueId];
+    }
+
+    getPlayerDict() {
+        return JSON.stringify(this.players);
     }
 
     removePlayer(Player) {
         Player.loggedIn = false;
-        delete this.players[Player.id];
+        delete this.players[Player.uid];
     }
 
     gameLoop(delta) {

@@ -9,7 +9,6 @@ class PacketSessionId extends Packet{
         super();
 
         this.sessionId;
-        this.uniqueId;
     }
 }
 

@@ -8,7 +8,6 @@ class PacketQuickPlay extends Packet{
     constructor(){
         super();
 
-        this.packetID = Packet.getNetOP().QuickPlay;
         this.player;
     }
 }
