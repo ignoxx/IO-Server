@@ -2,5 +2,6 @@
     "code-runner.clearPreviousOutput": true,
     "code-runner.executorMap": {
         "javascript": "node Server.js",
-    }
+    },
+    "editor.mouseWheelZoom": true
 }
