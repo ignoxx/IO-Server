@@ -2,6 +2,9 @@ const server = require('http').createServer();
 const io = require('socket.io')(server);
 const chalk = require('chalk');
 
+// add timestamps in front of log messages
+require('console-stamp')(console, 'HH:MM:ss.l');
+
 const Player = require('./src/Player.js');
 const World = require('./src/World.js');
 
@@ -24,7 +27,7 @@ server.listen(port, (err) => {
 
 
 io.on('connection', (client) => {
-    console.log(`Incoming connection.. > ${client.id}`);
+    console.log(`Incoming connection.. > '${client.id}'`);
 
     var player;
     var uniqueId = Math.random().toString(36).substring(3, 16) + +new Date;
@@ -34,7 +37,6 @@ io.on('connection', (client) => {
     packetSessionId.sessionId = client.id;
     client.emit(PacketSessionId.getPacketId(), packetSessionId.getPacketData());
     // #endregion
-
 
 
     client.on(PacketQuickPlay.getPacketId(), (data) => {
@@ -47,7 +49,7 @@ io.on('connection', (client) => {
         data.username = data.username.replace(/([^a-z0-9]+)/gi, '-');
 
         if(player !== undefined) {
-            console.log(chalk.red(`player ${player.id} already exists, packet rejected`));
+            console.log(chalk.red(`Player '${player.id}' already exists, packet rejected`));
             return;
         }
         // #endregion
@@ -59,7 +61,7 @@ io.on('connection', (client) => {
             if (gameWorld.findPlayerByUid(fullUniqueId) && player === undefined) {
                 player = gameWorld.getPlayer(fullUniqueId);
 
-                console.log(chalk.green("Player restored.. > " + player.uid));
+                console.log(chalk.green(`Player restored.. > '${player.id}'`));
             }
             else {
                 uniqueId = data.uniqueId;
@@ -94,10 +96,10 @@ io.on('connection', (client) => {
                 io.emit(PacketQuickPlay.getPacketId(), packetQuickPlay.getPacketData());
                 // #endregion
 
-                console.log(`${player.username} connected.. > ${player.id}`);
+                console.log(`${player.username} connected.. > '${player.id}'`);
             }
             else {
-                console.log(chalk.red(`${player.username} tried to connect.. > connection was rejected`));
+                console.log(chalk.red(`Client '${client.id}' tried to connect.. > connection was rejected`));
             }
         }
 
@@ -107,7 +109,7 @@ io.on('connection', (client) => {
     client.on('disconnect', (data) => {
         player.connected = false;
 
-        console.log(`Client '${client.id}' disconnected`);
+        console.log(`Client disconnected.. > '${client.id}'`);
 
         setTimeout(() => {
             if (player.loggedIn && !player.connected) {

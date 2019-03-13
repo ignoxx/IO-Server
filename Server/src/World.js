@@ -1,11 +1,12 @@
 const GameLoop = require('node-gameloop');
+const chalk = require('chalk');
 
 class World {
     constructor() {
         this.maxPlayers = 64;
         this.players = {};
 
-        console.log(`World created.. > MaxPlayers: ${this.maxPlayers}`);
+        console.log(chalk.green(`World created.. > MaxPlayers: ${this.maxPlayers}`));
 
         // 60 FPS loop
         this.gameLoopId = GameLoop.setGameLoop(this.gameLoop.bind(this), 1000 / 60);
@@ -29,6 +30,8 @@ class World {
         this.players[Player.uid] = Player;
         Player.loggedIn = true;
 
+        console.log(chalk.yellow(`Players online ${Object.keys(this.players).length}/${this.maxPlayers}`));
+
         return true;
     }
 
@@ -47,6 +50,8 @@ class World {
     removePlayer(Player) {
         Player.loggedIn = false;
         delete this.players[Player.uid];
+
+        console.log(chalk.yellow(`Players online ${Object.keys(this.players).length}/${this.maxPlayers}`));
     }
 
     gameLoop(delta) {
