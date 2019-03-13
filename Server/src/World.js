@@ -18,9 +18,9 @@ class World {
         }
 
         // Check if player is already logged in by name and ip addr, if yes return false
-        /*
-        for (let i in this.players) {
+        /*for (let i in this.players) {
             if (this.players[i].addr === Player.addr) {
+                console.log("detected same addr of already existing connection");
                 return false;
             }
         }

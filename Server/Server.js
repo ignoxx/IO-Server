@@ -19,7 +19,6 @@ server.listen(port, (err) => {
     if (err) throw err;
     console.log(`Listening on port.. > ${port}`);
 
-    // Create game world(s)
     gameWorld = new World();
 });
 
@@ -36,9 +35,9 @@ io.on('connection', (client) => {
     client.emit(PacketSessionId.getPacketId(), packetSessionId.getPacketData());
     // #endregion
 
-    // QuickPlay
+
+
     client.on(PacketQuickPlay.getPacketId(), (data) => {
-        console.log("quickplay packet received: " + data);
         data = JSON.parse(data);
 
         // #region User input checking
@@ -46,29 +45,30 @@ io.on('connection', (client) => {
 
         // Remove illegal characters
         data.username = data.username.replace(/([^a-z0-9]+)/gi, '-');
+
+        if(player !== undefined) {
+            console.log("player already exists, packet rejected");
+            return;
+        }
         // #endregion
 
-        // if this client has a uniqueId, restore his player data, if available
-        // else create a new one
+        // if this client has a uniqueId, restore his player data, if available otherwise create a new one
         if (data.uniqueId != "undefined") {
             let fullUniqueId = `${data.uniqueId}${client.handshake.address}`;
 
-            console.log("received full uid: " + fullUniqueId);
-            console.log("current players in world: " + gameWorld.getPlayerDict());
-
-            if (gameWorld.findPlayerByUid(fullUniqueId)) {
+            if (gameWorld.findPlayerByUid(fullUniqueId) && player === undefined) {
                 player = gameWorld.getPlayer(fullUniqueId);
 
-                console.log("Returning player " + player.uid);
+                console.log("Player restored.. > " + player.uid);
             }
             else {
-                console.log("Returning player but invalid uniqueId.. creating a new one..");
+                uniqueId = data.uniqueId;
             }
         }
 
-
+        // create a fresh new player
         if (player === undefined) {
-            // create a new fresh player
+
             player = new Player({
                 id: client.id,
                 uid: `${uniqueId}${client.handshake.address}`,
@@ -78,8 +78,6 @@ io.on('connection', (client) => {
 
                 username: data.username,
             });
-
-            console.log("creating player.., uid: " + player.uid);
 
             // #region send packet: tell client his new uniqueId
             let packetUniqueId = new PacketUniqueId();
@@ -91,11 +89,11 @@ io.on('connection', (client) => {
                 // #region Send packet
                 let packetQuickPlay = new PacketQuickPlay();
                 packetQuickPlay.player = player;
-    
+
                 //Send to all, including ourself
                 io.emit(PacketQuickPlay.getPacketId(), packetQuickPlay.getPacketData());
                 // #endregion
-    
+
                 console.log(`${player.username} connected.. > ${player.id}`);
             }
             else {
