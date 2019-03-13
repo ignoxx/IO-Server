@@ -10,6 +10,7 @@
   "author": "Ignas Kavaliauskas",
   "license": "MIT",
   "dependencies": {
+    "chalk": "^2.4.2",
     "node-gameloop": "^0.1.4",
     "socket.io": "^2.2.0"
   }

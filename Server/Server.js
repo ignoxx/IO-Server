@@ -1,5 +1,6 @@
 const server = require('http').createServer();
 const io = require('socket.io')(server);
+const chalk = require('chalk');
 
 const Player = require('./src/Player.js');
 const World = require('./src/World.js');
@@ -17,8 +18,7 @@ var gameWorld;
 // Listen for incoming connections
 server.listen(port, (err) => {
     if (err) throw err;
-    console.log(`Listening on port.. > ${port}`);
-
+    console.log(chalk.green(`Listening on port.. > ${port}`));
     gameWorld = new World();
 });
 
@@ -47,7 +47,7 @@ io.on('connection', (client) => {
         data.username = data.username.replace(/([^a-z0-9]+)/gi, '-');
 
         if(player !== undefined) {
-            console.log("player already exists, packet rejected");
+            console.log(chalk.red(`player ${player.id} already exists, packet rejected`));
             return;
         }
         // #endregion
@@ -59,7 +59,7 @@ io.on('connection', (client) => {
             if (gameWorld.findPlayerByUid(fullUniqueId) && player === undefined) {
                 player = gameWorld.getPlayer(fullUniqueId);
 
-                console.log("Player restored.. > " + player.uid);
+                console.log(chalk.green("Player restored.. > " + player.uid));
             }
             else {
                 uniqueId = data.uniqueId;
@@ -97,7 +97,7 @@ io.on('connection', (client) => {
                 console.log(`${player.username} connected.. > ${player.id}`);
             }
             else {
-                console.log(`${player.username} tried to connect.. > connection was rejected`);
+                console.log(chalk.red(`${player.username} tried to connect.. > connection was rejected`));
             }
         }
 
@@ -118,7 +118,7 @@ io.on('connection', (client) => {
                 client.broadcast.emit(PacketDisconnect.getPacketId(), packetDisconnect.getPacketData());
                 // #endregion
 
-                console.log(`Player '${player.username}' timed out`);
+                console.log(chalk.yellow(`Player '${player.username}' timed out`));
             }
         }, playerTimeOut * 1000);
     });
