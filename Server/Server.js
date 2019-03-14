@@ -1,20 +1,22 @@
+// add timestamps in front of log messages
+require('console-stamp')(console, 'HH:MM:ss.l');
+
 const server = require('http').createServer();
 const io = require('socket.io')(server);
 const chalk = require('chalk');
 
-// add timestamps in front of log messages
-require('console-stamp')(console, 'HH:MM:ss.l');
-
 const Player = require('./src/Player.js');
 const World = require('./src/World.js');
+const Client = require('./src/Client.js');
 
+const Packet = require('./src/Packets/Packet.js');
 const PacketQuickPlay = require('./src/Packets/PacketQuickPlay.js');
 const PacketSessionId = require('./src/Packets/PacketSessionId.js');
 const PacketDisconnect = require('./src/Packets/PacketDisconnect.js');
 const PacketUniqueId = require('./src/Packets/PacketUniqueId.js');
 
 const port = 5000;
-const playerTimeOut = 30; //seconds
+const DEV_MODE = true;
 
 var gameWorld;
 
@@ -29,99 +31,83 @@ server.listen(port, (err) => {
 io.on('connection', (client) => {
     console.log(`Incoming connection.. > '${client.id}'`);
 
-    var player;
-    var uniqueId = Math.random().toString(36).substring(3, 16) + +new Date;
+    var clientHandler = new Client({
+        socket: client
+    });
 
-    // #region Tell client his session id and unique id
-    let packetSessionId = new PacketSessionId();
-    packetSessionId.sessionId = client.id;
-    client.emit(PacketSessionId.getPacketId(), packetSessionId.getPacketData());
-    // #endregion
+    //Tell client his session id
+    new PacketSessionId().setData(client.id).emit(client);
 
 
-    client.on(PacketQuickPlay.getPacketId(), (data) => {
+    client.on(Packet.getEventName().QuickPlay, (data) => {
+        if (DEV_MODE) console.log(`Quickplay packet data: ${data}`);
+
         data = JSON.parse(data);
 
-        // #region User input checking
-        if (data.username.length <= 0) return;
+        data.username = clientHandler.formatUsername(data.username);
 
-        // Remove illegal characters
-        data.username = data.username.replace(/([^a-z0-9]+)/gi, '-');
-
-        if(player !== undefined) {
-            console.log(chalk.red(`Player '${player.id}' already exists, packet rejected`));
+        if (clientHandler.playerExists()) {
+            console.log(chalk.red(`Player '${clientHandler.player.id}' already exists, packet rejected`));
             return;
         }
-        // #endregion
 
-        // if this client has a uniqueId, restore his player data, if available otherwise create a new one
-        if (data.uniqueId != "undefined") {
-            let fullUniqueId = `${data.uniqueId}${client.handshake.address}`;
+        // if this client has a uniqueId, restore his player data
+        if (clientHandler.isValidUniqueId(data.uniqueId)) {
+            let fullUniqueId = clientHandler.getFullUniqueId(data.uniqueId);
 
-            if (gameWorld.findPlayerByUid(fullUniqueId) && player === undefined) {
-                player = gameWorld.getPlayer(fullUniqueId);
+            if (gameWorld.findPlayerByUid(fullUniqueId) && !clientHandler.playerExists()) {
+                clientHandler.player = gameWorld.getPlayer(fullUniqueId);
 
-                console.log(chalk.green(`Player restored.. > '${player.id}'`));
+                console.log(chalk.green(`Player restored.. > '${clientHandler.player.id}'`));
             }
             else {
-                uniqueId = data.uniqueId;
+                clientHandler.uniqueId = data.uniqueId;
             }
         }
 
         // create a fresh new player
-        if (player === undefined) {
+        if (!clientHandler.playerExists()) {
 
-            player = new Player({
+            clientHandler.player = new Player({
                 id: client.id,
-                uid: `${uniqueId}${client.handshake.address}`,
-
-                addr: client.handshake.address,
+                uid: `${clientHandler.uniqueId}${client.handshake.address}`,
                 socket: client,
 
                 username: data.username,
             });
 
-            // #region send packet: tell client his new uniqueId
-            let packetUniqueId = new PacketUniqueId();
-            packetUniqueId.uniqueId = uniqueId;
-            client.emit(PacketUniqueId.getPacketId(), packetUniqueId.getPacketData());
-            // #endregion
+            // tell client his new uniqueId
+            new PacketUniqueId().setData(clientHandler.uniqueId).emit(client);
 
-            if (gameWorld.addPlayer(player)) {
-                // #region Send packet
-                let packetQuickPlay = new PacketQuickPlay();
-                packetQuickPlay.player = player;
+            if (gameWorld.addPlayer(clientHandler.player)) {
 
-                //Send to all, including ourself
-                io.emit(PacketQuickPlay.getPacketId(), packetQuickPlay.getPacketData());
-                // #endregion
+                //Respond to all clients, including ourself
+                new PacketQuickPlay().setData(clientHandler.player).emit(io);
 
-                console.log(`${player.username} connected.. > '${player.id}'`);
+                console.log(`${clientHandler.player.username} connected.. > '${clientHandler.player.id}'`);
             }
             else {
                 console.log(chalk.red(`Client '${client.id}' tried to connect.. > connection was rejected`));
             }
         }
 
-        player.connected = true;
+        clientHandler.player.connected = true;
     });
 
     client.on('disconnect', (data) => {
-        player.connected = false;
+        clientHandler.player.connected = false;
 
         console.log(`Client disconnected.. > '${client.id}'`);
 
         setTimeout(() => {
-            if (player.loggedIn && !player.connected) {
-                gameWorld.removePlayer(player);
-                // #region Send packet 
-                packetDisconnect = new PacketDisconnect();
-                packetDisconnect.sessionId = player.uid;
-                client.broadcast.emit(PacketDisconnect.getPacketId(), packetDisconnect.getPacketData());
-                // #endregion
+            if (clientHandler.isPlayerLoggedIn() && !clientHandler.isPlayerConnected()) {
+                gameWorld.removePlayer(clientHandler.player);
 
-                console.log(chalk.yellow(`Player '${player.username}' timed out`));
+                // Tell everyone, ourself not included
+                new PacketDisconnect().setData(client.id).broadcast(client);
+
+                console.log(chalk.yellow(`Player '${clientHandler.player.username}' timed out`));
             }
-        }, playerTimeOut * 1000);
+        }, clientHandler.playerTimeOut * 1000);
     });
 });

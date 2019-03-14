@@ -1,14 +1,17 @@
 const Packet = require('./Packet.js')
 
 class PacketQuickPlay extends Packet{
-    static getPacketId() {
-        return Packet.getNetOP().QuickPlay;
-    }
-
     constructor(){
         super();
 
+        this.eventName = Packet.getEventName().QuickPlay;
         this.player;
+    }
+
+    setData(Player) {
+        this.player = Player;
+
+        return this;
     }
 }
 
