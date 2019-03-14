@@ -44,9 +44,7 @@ class Client {
       return this.player.connected;
     }
   }
-
-
 }
 
 
-module.exports = Client;
+module.exports = Client;x

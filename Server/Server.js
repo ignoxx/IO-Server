@@ -95,7 +95,7 @@ io.on('connection', (client) => {
     });
 
     client.on('disconnect', (data) => {
-        clientHandler.player.connected = false;
+        if(clientHandler.playerExists()) clientHandler.player.connected = false;
 
         console.log(`Client disconnected.. > '${client.id}'`);
 
